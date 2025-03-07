@@ -1,0 +1,106 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <link href="../css/main_tylesheet.css" type="text/css" rel="stylesheet">
+    <script src="../js/CSInterface.js"></script>
+    <script>
+        var CSLibrary = new CSInterface();
+
+        function updateTheme() {
+            var currentTheme = app.preferences.get('theme');
+            if (currentTheme === "dark") {
+                document.getElementById("index_body").style.backgroundColor = "#1e1e1e";
+                document.getElementById("index_body").style.color = "#c8c8c8";
+            } else {
+                document.getElementById("index_body").style.backgroundColor = "#f0f0f0";
+                document.getElementById("index_body").style.color = "#000000";
+            }
+        }
+
+        function themeChangedEventListener(event) {
+            updateTheme();
+        }
+
+        CSLibrary.addEventListener("com.adobe.csxs.events.ThemeColorChanged", themeChangedEventListener);
+        window.onload = function() {
+            updateTheme();
+        };
+
+        function searchCoactive(event) {
+            event.preventDefault(); // Prevent form from reloading the page
+            let query = document.getElementById('query').value;
+            let datasetId = document.getElementById('datasetId').value;
+            let clientId = document.getElementById('clientId').value;
+            let clientSecret = document.getElementById('clientSecret').value;
+
+            let url = `https://app.coactive.ai/api/v1/search?query=${encodeURIComponent(query)}&dataset_id=edf9c56b-3a0b-4562-a740-6fdccdfcc1e3`;
+
+            fetch(url, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer odORqa6Z4pz2usfhYhPRLAmKWrEZhLK5:5_9hqk4s2SocDsZUg9AUHUGnpnTmMbWf2AHvVGgEmf6scfE9mWFZcxQ5-vdjCikH"
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Search Results:", data);
+                    displayResults(data);
+                })
+                .catch(error => {
+                    console.error("Error performing search:", error);
+                });
+        }
+
+        function displayResults(data) {
+            let resultsDiv = document.getElementById("search_results");
+            resultsDiv.innerHTML = ""; // Clear previous results
+
+            if (data.data && data.data.length > 0) {
+                let table = document.createElement("table");
+                table.border = "1";
+                let headerRow = table.insertRow();
+                let headerCell1 = headerRow.insertCell(0);
+                let headerCell2 = headerRow.insertCell(1);
+                headerCell1.textContent = "Coactive Image ID";
+                headerCell2.textContent = "Image";
+
+                data.data.forEach(item => {
+                    let row = table.insertRow();
+                    let cell1 = row.insertCell(0);
+                    let cell2 = row.insertCell(1);
+                    cell1.textContent = item.coactiveImageId;
+                    cell2.textContent = ""; // Placeholder for image
+                });
+
+                resultsDiv.appendChild(table);
+            } else {
+                resultsDiv.innerHTML = "<p>No results found.</p>";
+            }
+        }
+    </script>
+</head>
+
+<body id="index_body">
+
+<form id="search_form" onsubmit="searchCoactive(event);">
+    <label for="query">Semantic Search Query</label><br>
+    <input type="text" name="query" id="query"></input><br>
+
+    <label for="datasetId">Dataset ID</label><br>
+    <input type="text" name="datasetId" id="datasetId"></input><br>
+
+    <label for="clientId">Client ID</label><br>
+    <input type="text" name="clientId" id="clientId"></input><br>
+
+    <label for="clientSecret">Client Secret</label><br>
+    <input type="password" name="clientSecret" id="clientSecret"></input><br>
+
+    <button type="submit">Search</button>
+</form>
+</br>
+<div id="search_results"></div>
+
+</body>
+</html>
