@@ -2,7 +2,7 @@
 
 ## Overview
 
-The goal of this is to provide the sales team yet another tool / example of how they can sell Coactive into a News/Media production use case. Often times customers are working with tools that they are already familiar with and this is a way to prove that integration. A popular production tool is [Adobe Premiere Pro](https://www.adobe.com/products/premiere.html) and this plugin attempts to offer a way for users to remain inside Premier Pro and use Coactive Semantic search.
+The goal of this is to provide the sales team yet another sales (YAS) tool / example of how they can sell Coactive into a News/Media production use case. Often times customers are working with tools that they are already familiar with and this is a way to prove that integration. A popular production tool is [Adobe Premiere Pro](https://www.adobe.com/products/premiere.html) and this plugin attempts to offer a way for users to remain inside Premier Pro and use Coactive Semantic search.
 
 ### Video
 
@@ -15,10 +15,12 @@ The following steps are needed to run this demo on Mac. If you're on Windows (wh
 1. Download and install Adobe Premiere Pro. Follow the standard instructions for installing
 2. Download this repository to your machine
 3. Move the folder to your plugins location
-    ```shell
+   ```shell
 
-    ```
-4. 
+   ```
+4. Enable unsigned applications to work by running the following command
+   ```shell
+   ```
 
 ## ToDo's
 
