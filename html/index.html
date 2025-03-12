@@ -27,12 +27,48 @@
             updateTheme();
         };
 
-        function searchCoactive(event) {
+        async function getAccessToken(clientId, clientSecret) {
+            const url = "https://public.app.coactive.ai/api/v0/login";
+
+            // Encode client_id and client_secret in Base64 for Basic Authentication
+            const credentials = btoa(`${clientId}:${clientSecret}`);
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Basic ${credentials}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to retrieve access token! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log("Retrieved Access Token:", data.access_token);
+                return data.access_token;
+            } catch (error) {
+                console.error("Error retrieving access token:", error);
+                return null;
+            }
+        }
+
+        async function searchCoactive(event) {
             event.preventDefault(); // Prevent form from reloading the page
             let query = document.getElementById('query').value;
             let datasetId = document.getElementById('datasetId').value;
-            let clientId = document.getElementById('clientId').value;
-            let clientSecret = document.getElementById('clientSecret').value;
+            // let clientId = document.getElementById('clientId').value;
+            // let clientSecret = document.getElementById('clientSecret').value;
+            let clientId = "odORqa6Z4pz2usfhYhPRLAmKWrEZhLK5";
+            let clientSecret = "5_9hqk4s2SocDsZUg9AUHUGnpnTmMbWf2AHvVGgEmf6scfE9mWFZcxQ5-vdjCikH";
+
+            let token = await getAccessToken(clientId, clientSecret);
+            if (!token) {
+                console.error("No access token retrieved. Cannot proceed.");
+                return;
+            }
 
             let url = `https://app.coactive.ai/api/v1/search?query=${encodeURIComponent(query)}&dataset_id=edf9c56b-3a0b-4562-a740-6fdccdfcc1e3`;
 
@@ -40,20 +76,20 @@
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": "Bearer odORqa6Z4pz2usfhYhPRLAmKWrEZhLK5:5_9hqk4s2SocDsZUg9AUHUGnpnTmMbWf2AHvVGgEmf6scfE9mWFZcxQ5-vdjCikH"
+                    "Authorization": `Bearer ${token}`
                 }
             })
                 .then(response => response.json())
                 .then(data => {
                     console.log("Search Results:", data);
-                    displayResults(data);
+                    displayResults(data, token);
                 })
                 .catch(error => {
                     console.error("Error performing search:", error);
                 });
         }
 
-        function displayResults(data) {
+        function displayResults(data, token) {
             let resultsDiv = document.getElementById("search_results");
             resultsDiv.innerHTML = ""; // Clear previous results
 
@@ -75,43 +111,69 @@
 
                     console.log(`Fetching Metadata: ${metadataUrl}`);
 
-                    // Fetch metadata first to get the "thumb" image URL
                     fetch(metadataUrl, {
                         method: "GET",
                         headers: {
-                            "Authorization": "Bearer odORqa6Z4pz2usfhYhPRLAmKWrEZhLK5:5_9hqk4s2SocDsZUg9AUHUGnpnTmMbWf2AHvVGgEmf6scfE9mWFZcxQ5-vdjCikH",
+                            "Authorization": `Bearer ${token}`,
                             "Accept": "application/json"
                         }
                     })
                         .then(response => {
+                            console.log(`Metadata Fetch Response Status: ${response.status}`);
                             if (!response.ok) {
                                 throw new Error(`HTTP error! Status: ${response.status}`);
                             }
-                            return response.json(); // Convert response to JSON
+                            return response.json();
                         })
                         .then(metadata => {
                             let thumbImageUrl = metadata.previewImages?.regular?.url;
 
                             if (thumbImageUrl) {
                                 console.log(`Fetched Thumb Image URL: ${thumbImageUrl}`);
-                                let img = document.createElement("img");
-                                img.src = thumbImageUrl;
-                                img.style.maxWidth = "100px";
-                                img.alt = thumbImageUrl;
-                                cell2.appendChild(img);
+
+                                // Fetch the image as a blob
+                                fetch(thumbImageUrl, {
+                                    method: "GET",
+                                    headers: {
+                                        "Authorization": `Bearer ${token}`,
+                                        "Accept": "application/json"
+                                    }
+                                })
+                                    .then(response => {
+                                        console.log(`Image Fetch Response Status: ${response.status}`);
+                                        if (!response.ok) {
+                                            throw new Error(`Image fetch error! Status: ${response.status}`);
+                                        }
+                                        return response.blob();
+                                    })
+                                    .then(blob => {
+                                        let objectUrl = URL.createObjectURL(blob);
+                                        let img = document.createElement("img");
+                                        img.src = objectUrl;
+                                        img.style.maxWidth = "100px";
+                                        img.alt = "Protected Image";
+                                        cell2.appendChild(img);
+                                    })
+                                    .catch(error => {
+                                        console.error("Error fetching protected image:", error);
+                                        let errorText = document.createElement("p");
+                                        errorText.textContent = `Failed to load image. ${error.message}. Image Url ${thumbImageUrl}`;
+                                        cell2.appendChild(errorText);
+                                    });
+
                             } else {
                                 console.warn("Thumb image URL not found in metadata");
                                 let urlText = document.createElement("a");
                                 urlText.href = metadataUrl;
                                 urlText.textContent = metadataUrl;
-                                urlText.target = "_blank"; // Open link in a new tab
+                                urlText.target = "_blank";
                                 cell2.appendChild(urlText);
                             }
                         })
                         .catch(error => {
                             console.error("Error fetching metadata:", error);
                             let errorText = document.createElement("p");
-                            errorText.textContent = "Failed to load image.";
+                            errorText.textContent = `Failed to load metadata. ${error.message}`;
                             cell2.appendChild(errorText);
                         });
                 });
